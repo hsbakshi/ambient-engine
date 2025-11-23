@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["es6", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": true,
+    "baseUrl": ".",
+    "paths": {
+      "@hybrid/audio-engine/web": ["../audio-engine/dist/web"],
+      "@hybrid/audio-engine": ["../audio-engine/dist"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

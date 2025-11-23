@@ -1,0 +1,20 @@
+{
+  "name": "@hybrid/audio-engine",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./web": "./dist/web.js"
+  },
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react-native": "0.71.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
