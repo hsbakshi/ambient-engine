@@ -3,8 +3,7 @@ import { EventScheduler } from './scheduler';
 
 export class WebAudioEngine implements AudioEngine {
   private audioContext: AudioContext | null = null;
-  private baseLayerGains: Map<string, GainNode> = new Map();
-  private baseLayerSources: Map<string, AudioBufferSourceNode> = new Map();
+  private baseLayerElements: Map<string, HTMLAudioElement> = new Map();
   private eventSources: AudioBufferSourceNode[] = [];
   private audioBuffers: Map<string, AudioBuffer> = new Map();
   private scheduler: EventScheduler = new EventScheduler();
@@ -22,21 +21,18 @@ export class WebAudioEngine implements AudioEngine {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
 
-    // Load all audio buffers for the current soundscape
+    // Load event audio buffers (base layers use HTML5 audio)
     if (this.soundscape) {
-      await this.loadAllAudioBuffers();
+      await this.loadEventAudioBuffers();
     }
   }
 
-  private async loadAllAudioBuffers(): Promise<void> {
+  private async loadEventAudioBuffers(): Promise<void> {
     if (!this.soundscape || !this.audioContext) return;
 
-    const allIds = [
-      ...this.soundscape.baseLayers.map(l => l.id),
-      ...this.soundscape.events.map(e => e.id),
-    ];
+    const eventIds = this.soundscape.events.map(e => e.id);
 
-    for (const id of allIds) {
+    for (const id of eventIds) {
       if (!this.audioBuffers.has(id)) {
         const url = this.assetUrls.get(id);
         if (url) {
@@ -60,20 +56,33 @@ export class WebAudioEngine implements AudioEngine {
   async start(): Promise<void> {
     if (this.running) return;
 
+    this.running = true;
+
+    // Start base layers SYNCHRONOUSLY first (must happen in user interaction context on iOS)
+    if (this.soundscape) {
+      for (const baseLayer of this.soundscape.baseLayers) {
+        this.playBaseLayer(baseLayer.id);
+      }
+    }
+
+    // iOS audio session setup for loudspeaker support (iOS 17+)
+    if (typeof window !== 'undefined' && (navigator as any).audioSession) {
+      try {
+        // Set audio session type to playback so audio respects loudspeaker
+        // instead of mute switch (iOS 17+)
+        (navigator as any).audioSession.type = 'playback';
+      } catch (e) {
+        console.debug('Audio session configuration not available');
+      }
+    }
+
     // Resume context if suspended (required by browsers)
     if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
 
-    this.running = true;
-
-    // Start base layers
+    // Setup event scheduler (can be async)
     if (this.soundscape) {
-      for (const baseLayer of this.soundscape.baseLayers) {
-        this.playBaseLayer(baseLayer.id);
-      }
-
-      // Setup event scheduler
       this.scheduler.setIntensity(this.intensity);
       this.scheduler.setEventCallback((event) => this.playEvent(event.id));
       await this.scheduler.start(this.soundscape.events);
@@ -81,23 +90,26 @@ export class WebAudioEngine implements AudioEngine {
   }
 
   private playBaseLayer(layerId: string): void {
-    if (!this.audioContext) return;
+    const url = this.assetUrls.get(layerId);
+    if (!url) return;
 
-    const buffer = this.audioBuffers.get(layerId);
-    if (!buffer) return;
+    // Use HTML5 audio element for base layers (better iOS support)
+    const audio = new Audio();
+    audio.src = url;
+    audio.loop = true;
+    audio.volume = 0.3; // Base layer volume
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.start(0);
+    // Play must be called synchronously within user interaction context on iOS
+    try {
+      // Using play() return Promise, ignore rejection
+      audio.play()?.catch(() => {
+        // Silently continue if play fails initially
+      });
+    } catch (error) {
+      console.warn(`Failed to play base layer ${layerId}:`, error);
+    }
 
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = 0.3; // Base layer volume
-    source.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-
-    this.baseLayerGains.set(layerId, gainNode);
-    this.baseLayerSources.set(layerId, source);
+    this.baseLayerElements.set(layerId, audio);
   }
 
   private async playEvent(eventId: string): Promise<void> {
@@ -134,12 +146,12 @@ export class WebAudioEngine implements AudioEngine {
     this.running = false;
     this.scheduler.stop();
 
-    // Stop base layers
-    for (const source of this.baseLayerSources.values()) {
-      source.stop();
+    // Stop base layer audio elements
+    for (const audio of this.baseLayerElements.values()) {
+      audio.pause();
+      audio.currentTime = 0;
     }
-    this.baseLayerSources.clear();
-    this.baseLayerGains.clear();
+    this.baseLayerElements.clear();
 
     // Stop all event sounds
     for (const source of this.eventSources) {
@@ -161,7 +173,7 @@ export class WebAudioEngine implements AudioEngine {
 
   async setSoundscape(soundscape: Soundscape): Promise<void> {
     this.soundscape = soundscape;
-    await this.loadAllAudioBuffers();
+    await this.loadEventAudioBuffers();
   }
 
   isRunning(): boolean {
