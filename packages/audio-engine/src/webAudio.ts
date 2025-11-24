@@ -5,6 +5,7 @@ export class WebAudioEngine implements AudioEngine {
   private audioContext: AudioContext | null = null;
   private baseLayerGains: Map<string, GainNode> = new Map();
   private baseLayerSources: Map<string, AudioBufferSourceNode> = new Map();
+  private eventSources: AudioBufferSourceNode[] = [];
   private audioBuffers: Map<string, AudioBuffer> = new Map();
   private scheduler: EventScheduler = new EventScheduler();
   private soundscape: Soundscape | null = null;
@@ -100,7 +101,7 @@ export class WebAudioEngine implements AudioEngine {
   }
 
   private async playEvent(eventId: string): Promise<void> {
-    if (!this.audioContext) return;
+    if (!this.audioContext || !this.running) return;
 
     const buffer = this.audioBuffers.get(eventId);
     if (!buffer) return;
@@ -120,7 +121,13 @@ export class WebAudioEngine implements AudioEngine {
     gainNode.connect(pannerNode);
     pannerNode.connect(this.audioContext.destination);
 
+    this.eventSources.push(source);
     source.start(0);
+
+    // Remove source from tracking when it ends
+    source.onended = () => {
+      this.eventSources = this.eventSources.filter(s => s !== source);
+    };
   }
 
   async stop(): Promise<void> {
@@ -133,6 +140,16 @@ export class WebAudioEngine implements AudioEngine {
     }
     this.baseLayerSources.clear();
     this.baseLayerGains.clear();
+
+    // Stop all event sounds
+    for (const source of this.eventSources) {
+      try {
+        source.stop();
+      } catch (e) {
+        // Source may have already ended naturally
+      }
+    }
+    this.eventSources = [];
   }
 
   setOptions(options: AudioEngineOptions): void {
