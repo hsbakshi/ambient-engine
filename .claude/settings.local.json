@@ -6,7 +6,8 @@
       "Bash(node verify-structure.js:*)",
       "WebSearch",
       "Bash(kill:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

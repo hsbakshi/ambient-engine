@@ -7,6 +7,7 @@ type Engine = WebAudioEngine | null;
 
 export default function App() {
   const [running, setRunning] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [intensity, setIntensity] = useState(0.7);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function App() {
   const handleStart = async () => {
     try {
       setError(null);
+      setLoading(true);
       const engine = engineRef.current;
       if (!engine) return;
 
@@ -42,25 +44,30 @@ export default function App() {
       engine.setOptions({ intensity });
       await engine.start();
       setRunning(true);
+      setLoading(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start audio';
       setError(message);
       console.error('Error starting audio:', err);
+      setLoading(false);
     }
   };
 
   const handleStop = async () => {
     try {
       setError(null);
+      setLoading(true);
       const engine = engineRef.current;
       if (!engine) return;
 
       await engine.stop();
       setRunning(false);
+      setLoading(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to stop audio';
       setError(message);
       console.error('Error stopping audio:', err);
+      setLoading(false);
     }
   };
 
@@ -89,6 +96,7 @@ export default function App() {
 
           <Controls
             running={running}
+            loading={loading}
             onStart={handleStart}
             onStop={handleStop}
             intensity={intensity}

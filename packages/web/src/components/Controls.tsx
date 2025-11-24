@@ -3,6 +3,7 @@ import './Controls.css';
 
 interface ControlsProps {
   running: boolean;
+  loading: boolean;
   onStart: () => void;
   onStop: () => void;
   intensity: number;
@@ -11,6 +12,7 @@ interface ControlsProps {
 
 export default function Controls({
   running,
+  loading,
   onStart,
   onStop,
   intensity,
@@ -19,10 +21,20 @@ export default function Controls({
   return (
     <div className="controls">
       <button
-        className={`play-button ${running ? 'running' : ''}`}
+        className={`play-button ${running ? 'running' : ''} ${loading ? 'loading' : ''}`}
         onClick={running ? onStop : onStart}
+        disabled={loading}
       >
-        {running ? 'Stop' : 'Start'}
+        {loading ? (
+          <>
+            <span className="spinner"></span>
+            {running ? 'Stopping...' : 'Starting...'}
+          </>
+        ) : running ? (
+          'Stop'
+        ) : (
+          'Start'
+        )}
       </button>
 
       <div className="slider-container">

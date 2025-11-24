@@ -31,6 +31,34 @@
   transform: translateY(0);
 }
 
+.play-button:disabled {
+  opacity: 0.9;
+  cursor: not-allowed;
+}
+
+.play-button.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .play-button.running {
   background: linear-gradient(135deg, #ec4899 0%, #dc2626 100%);
   box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3), 0 0 20px rgba(236, 72, 153, 0.2);
