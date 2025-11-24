@@ -23,12 +23,5 @@ export const SLU_SOUNDscape: Soundscape = {
       minDelay: 8000,
       maxDelay: 20000,
     },
-    {
-      id: 'seaplanes',
-      name: 'Seaplanes',
-      weight: 0.15,
-      minDelay: 20000,
-      maxDelay: 45000,
-    },
   ],
 };
