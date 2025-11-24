@@ -2,6 +2,7 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://ambi.hrishi.ca",
   "scripts": {
     "dev": "react-scripts start",
     "build": "react-scripts build",

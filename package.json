@@ -12,11 +12,13 @@
     "build": "npm run build:engine && npm run build:web",
     "dev:web": "npm run dev --workspace=packages/web",
     "dev:mobile": "npm start --workspace=packages/mobile",
+    "deploy": "npm run build && npx gh-pages -d packages/web/build",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
+    "gh-pages": "^6.3.0",
     "typescript": "5.9.3"
   }
 }
