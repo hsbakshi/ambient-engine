@@ -51,6 +51,8 @@ export class ExpoAudioEngine implements AudioEngine {
   }
 
   private async playEvent(eventId: string): Promise<void> {
+    if (!this.running) return;
+
     try {
       const sound = new Audio.Sound();
       const assetSource = this.getAssetSource(eventId);
@@ -61,11 +63,14 @@ export class ExpoAudioEngine implements AudioEngine {
       await sound.setVolumeAsync(volume);
 
       await sound.playAsync();
+      this.soundObjects.set(`event-${eventId}`, sound);
 
       // Clean up after playback
       setTimeout(() => {
-        sound.unloadAsync();
-        this.soundObjects.delete(`event-${eventId}`);
+        if (this.soundObjects.has(`event-${eventId}`)) {
+          sound.unloadAsync();
+          this.soundObjects.delete(`event-${eventId}`);
+        }
       }, 3000);
     } catch (error) {
       console.warn(`Failed to play event: ${eventId}`, error);
